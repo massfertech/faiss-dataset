@@ -27,7 +27,7 @@ df = load_data()
 # Show a multiselect widget with the genres using `st.multiselect`.
 genres = st.multiselect(
     "Genres",
-    df.genre.unique(),
+    df.subjects.unique(),
     ["Action", "Adventure", "Biography", "Comedy", "Drama", "Horror"],
 )
 
@@ -35,7 +35,7 @@ genres = st.multiselect(
 years = st.slider("Years", 1986, 2006, (2000, 2016))
 
 # Filter the dataframe based on the widget input and reshape it.
-df_filtered = df[(df["genre"].isin(genres)) & (df["year"].between(years[0], years[1]))]
+df_filtered = df[(df["genre"].isin(genres)) & (df["publication_year"].between(years[0], years[1]))]
 df_reshaped = df_filtered.pivot_table(
     index="year", columns="genre", values="gross", aggfunc="sum", fill_value=0
 )
