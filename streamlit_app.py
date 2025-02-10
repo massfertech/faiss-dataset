@@ -1,6 +1,7 @@
 import altair as alt
 import pandas as pd
 import streamlit as st
+import pikle as pkl
 
 # Show the page title and description.
 st.set_page_config(page_title="Movies dataset", page_icon="🎬")
@@ -18,7 +19,7 @@ st.write(
 # reruns (e.g. if the user interacts with the widgets).
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data/movies_genres_summary.csv")
+    df = pd.read_csv("data/df1_part1.pkl")
     return df
 
 
