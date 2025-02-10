@@ -24,7 +24,7 @@ def load_model():
 @st.cache_resource
 def load_index():
     index = faiss.read_index("data/faiss_index.bin")
-    final_df = pd.read_csv("data/paper_data.csv")
+    final_df = pd.read_csv("data/df1_part1.csv")
     embeddings = np.load("data/embeddings.npy")
     return index, final_df, embeddings
 
