@@ -1,7 +1,7 @@
 import altair as alt
 import pandas as pd
 import streamlit as st
-import pikle as pkl
+import pickle as pkl
 
 # Show the page title and description.
 st.set_page_config(page_title="Movies dataset", page_icon="🎬")
