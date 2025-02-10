@@ -1,66 +1,74 @@
 import altair as alt
 import pandas as pd
 import streamlit as st
+import numpy as np
+import faiss
+from sentence_transformers import SentenceTransformer
 
-# Show the page title and description.
-st.set_page_config(page_title="Pubmed dataset", page_icon="🎬")
-st.title(" Pubmed dataset")
+# Configurar la página
+st.set_page_config(page_title="Pubmed Search Engine", page_icon="🔍")
+st.title(" Pubmed Semantic Search")
 st.write(
     """
-    This app visualizes data from Pubmed and PMC.
-    It shows which paper performed best at the patient. Just 
-    click on the widgets below to explore!
+    This app helps you find relevant scientific papers from Pubmed/PMC using AI-powered semantic search.
+    Enter your query in natural language and find the most relevant papers!
     """
 )
 
+# Cargar modelo una vez y mantenerlo en cache
+@st.cache_resource
+def load_model():
+    return SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
-# Load the data from a CSV. We're caching this so it doesn't reload every time the app
-# reruns (e.g. if the user interacts with the widgets).
-@st.cache_data
-def load_data():
-    df = pd.read_csv("data/df1_part1.csv")
-    return df
+# Cargar datos y índices FAISS
+@st.cache_resource
+def load_index():
+    index = faiss.read_index("data/faiss_index.bin")
+    final_df = pd.read_csv("data/paper_data.csv")
+    embeddings = np.load("data/embeddings.npy")
+    return index, final_df, embeddings
 
+model = load_model()
+index, final_df, embeddings = load_index()
 
-df = load_data()
-
-# Show a multiselect widget with the genres using `st.multiselect`.
-genres = st.multiselect(
-    "Genres",
-    df.subjects.unique(),
-    ["Action", "Adventure", "Biography", "Comedy", "Drama", "Horror"],
+# Barra de búsqueda
+query_text = st.text_input(
+    "Enter your scientific query:",
+    placeholder="e.g., Can Breastfeeding Prevent Obesity?",
+    help="Type your question or keywords and press Enter"
 )
 
-# Show a slider widget with the years using `st.slider`.
-years = st.slider("Years", 1986, 2006, (2000, 2016))
+if query_text:
+    # Generar embedding de la consulta
+    query_embedding = model.encode([query_text])
+    
+    # Búsqueda FAISS
+    k = 10  # Número de resultados
+    distances, indices = index.search(query_embedding, k)
+    
+    # Calcular similitud coseno
+    query_embedding_flat = query_embedding.flatten()
+    cosine_sims = []
+    for idx in indices[0]:
+        doc_embedding = embeddings[idx]
+        dot_product = np.dot(query_embedding_flat, doc_embedding)
+        norm_product = np.linalg.norm(query_embedding_flat) * np.linalg.norm(doc_embedding)
+        cosine_sims.append(dot_product / norm_product)
+    
+    # Crear DataFrame de resultados
+    result_df = final_df.iloc[indices[0]][['full_title', 'doi', 'abstract','full_text']].copy()
+    result_df['Relevance Score'] = cosine_sims
+    result_df['L2 Distance'] = distances[0]
+    
+    # Formatear resultados
+    result_df = result_df[['full_title', 'abstract', 'doi', 'Relevance Score', 'L2 Distance']]
+    result_df['Relevance Score'] = result_df['Relevance Score'].apply(lambda x: f"{x:.1%}")
+    result_df['L2 Distance'] = result_df['L2 Distance'].apply(lambda x: f"{x:.2f}")
 
-# Filter the dataframe based on the widget input and reshape it.
-df_filtered = df[(df["genre"].isin(genres)) & (df["publication_year"].between(years[0], years[1]))]
-df_reshaped = df_filtered.pivot_table(
-    index="year", columns="genre", values="gross", aggfunc="sum", fill_value=0
-)
-df_reshaped = df_reshaped.sort_values(by="year", ascending=False)
-
-
-# Display the data as a table using `st.dataframe`.
-st.dataframe(
-    df_reshaped,
-    use_container_width=True,
-    column_config={"year": st.column_config.TextColumn("Year")},
-)
-
-# Display the data as an Altair chart using `st.altair_chart`.
-df_chart = pd.melt(
-    df_reshaped.reset_index(), id_vars="year", var_name="genre", value_name="gross"
-)
-chart = (
-    alt.Chart(df_chart)
-    .mark_line()
-    .encode(
-        x=alt.X("year:N", title="Year"),
-        y=alt.Y("gross:Q", title="Gross earnings ($)"),
-        color="genre:N",
-    )
-    .properties(height=320)
-)
-st.altair_chart(chart, use_container_width=True)
+    # Mostrar resultados
+    st.subheader(f"Top {k} most relevant papers:")
+    for idx, row in result_df.iterrows():
+        with st.expander(f"{row['full_title']} (Relevance: {row['Relevance Score']})"):
+            st.markdown(f"**DOI:** {row['doi']}")
+            st.markdown(f"**Abstract:** {row['abstract']}")
+            st.markdown(f"**Full text available:** {'' if pd.isna(row['full_text']) else 'Yes'}")
