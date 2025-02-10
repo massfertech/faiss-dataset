@@ -1,3 +1,5 @@
 streamlit
 scikit-learn
 pandas
+sentence-transformers
+faiss-cpu
