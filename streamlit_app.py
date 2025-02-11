@@ -39,6 +39,8 @@ query_text = st.text_input(
 )
 
 if query_text:
+    # Agregar los embeddings al índice
+    index.add(embeddings)
     # Generar embedding de la consulta
     query_embedding = model.encode([query_text])
     
