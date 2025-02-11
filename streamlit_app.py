@@ -83,8 +83,8 @@ def load_embeddings():
 def load_dataframe():
     # Load the metadata for the papers by combining two CSV files.
     # This allows you to bypass GitHub's file size limitations by splitting your dataset.
-    df1 = pd.read_csv("data/df1_parte1.csv")
-    df2 = pd.read_csv("data/df1_parte2.csv")
+    df1 = pd.read_csv("data/df1_part1.csv")
+    df2 = pd.read_csv("data/df1_part2.csv")
     df = pd.concat([df1, df2], ignore_index=True)
     return df
 
