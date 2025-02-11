@@ -65,26 +65,40 @@ if st.button("Buscar"):
             index = load_faiss_index()
             embeddings = load_embeddings()
             df = load_dataframe()
-
-            # Convertimos la consulta en un embedding
+            
+            # Convertir la consulta en un embedding
             query_embedding = model.encode([query_text])
             
-            # Buscamos en el índice FAISS los k vecinos más cercanos (usando L2)
+            # Aseguramos que k no supere la cantidad de filas en el DataFrame
+            k = min(k, len(df))
+            
+            # Buscar en el índice FAISS los k vecinos más cercanos (usando L2)
             distances, indices = index.search(query_embedding, k)
             query_embedding_flat = query_embedding.flatten()
+            
+            # Filtrar índices válidos (evitar índices negativos o fuera del rango)
+            valid_indices = [idx for idx in indices[0] if idx >= 0 and idx < len(df)]
+            if not valid_indices:
+                st.error("No se encontraron resultados válidos.")
+            else:
+                # Calcular la similitud coseno para cada resultado válido
+                cosine_sims = []
+                for idx in valid_indices:
+                    doc_embedding = embeddings[idx]
+                    dot_product = np.dot(query_embedding_flat, doc_embedding)
+                    norm_product = np.linalg.norm(query_embedding_flat) * np.linalg.norm(doc_embedding)
+                    cosine_sims.append(dot_product / norm_product)
+            
+                # Extraer las filas correspondientes del DataFrame
+                result_df = df.iloc[valid_indices][['full_title', 'abstract', 'doi']].copy()
+                
+                # Filtrar también las distancias correspondientes a los índices válidos
+                valid_distances = [dist for i, dist in zip(indices[0], distances[0]) if i in valid_indices]
+                
+                # Agregar las métricas al DataFrame
+                result_df['L2_score'] = valid_distances
+                result_df['cosine_sim'] = cosine_sims
+                result_df = result_df[['full_title', 'abstract', 'doi', 'cosine_sim', 'L2_score']]
+                
+                st.write(result_df)
 
-            # Calculamos la similitud coseno para cada resultado
-            cosine_sims = []
-            for idx in indices[0]:
-                doc_embedding = embeddings[idx]
-                dot_product = np.dot(query_embedding_flat, doc_embedding)
-                norm_product = np.linalg.norm(query_embedding_flat) * np.linalg.norm(doc_embedding)
-                cosine_sims.append(dot_product / norm_product)
-
-            # Creamos el DataFrame de resultados
-            result_df = df.iloc[indices[0]][['full_title', 'abstract', 'doi']].copy()
-            result_df['L2_score'] = distances[0]
-            result_df['cosine_sim'] = cosine_sims
-            result_df = result_df[['full_title', 'abstract', 'doi', 'cosine_sim', 'L2_score']]
-
-            st.write(result_df)
