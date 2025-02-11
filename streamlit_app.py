@@ -26,7 +26,7 @@ st.markdown("""
     <style>
     /* Title and description styling */
     .main-title {
-        font-size: 3em;
+        font-size: 5em;
         text-align: center;
     }
     .main-description {
@@ -46,12 +46,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Big title and description
-st.markdown("<h1 class='main-title'>Paper Finder</h1>", unsafe_allow_html=True)
+st.markdown("<h1 class='main-title'>Paper Finder 🔍</h1>", unsafe_allow_html=True)
 st.markdown("<h2 class='main-description'>Discover the most relevant research papers based on your query</h2>", unsafe_allow_html=True)
 
 # "How it works" description (unchanged)
 st.markdown("""
-**How it works:**  
+**How it works?**  
 - Your query is converted into an embedding using a Sentence-BERT model.  
 - The FAISS index is used to retrieve the closest papers based on the L2 distance.  
 - Additionally, cosine similarity is calculated to provide another similarity metric.
