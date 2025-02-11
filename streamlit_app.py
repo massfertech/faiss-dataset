@@ -21,6 +21,45 @@ def clean_text(text):
     text = ' '.join([word for word in text.split() if word not in stop_words])
     return text
 
+# Custom CSS for styling
+st.markdown("""
+    <style>
+    /* Title and description styling */
+    .main-title {
+        font-size: 3em;
+        text-align: center;
+    }
+    .main-description {
+        font-size: 2em;
+        text-align: center;
+        margin-bottom: 1em;
+    }
+    /* Ensure table rows adjust height to fit content and wrap text */
+    div[data-baseweb="table"] table tbody tr {
+        height: auto;
+    }
+    div[data-baseweb="table"] table thead tr th, 
+    div[data-baseweb="table"] table tbody tr td {
+        white-space: normal;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Big title and description
+st.markdown("<h1 class='main-title'>Paper Finder</h1>", unsafe_allow_html=True)
+st.markdown("<h2 class='main-description'>Discover the most relevant research papers based on your query</h2>", unsafe_allow_html=True)
+
+# "How it works" description (unchanged)
+st.markdown("""
+**How it works:**  
+- Your query is converted into an embedding using a Sentence-BERT model.  
+- The FAISS index is used to retrieve the closest papers based on the L2 distance.  
+- Additionally, cosine similarity is calculated to provide another similarity metric.
+""")
+
+# Text above the search bar
+st.markdown("**Enter your search below and enjoy exploring the research papers:**")
+
 # Use st.cache_resource for heavy objects and st.cache_data for data
 @st.cache_resource
 def load_model():
@@ -44,28 +83,13 @@ def load_embeddings():
 def load_dataframe():
     # Load the metadata for the papers by combining two CSV files.
     # This allows you to bypass GitHub's file size limitations by splitting your dataset.
-    df1 = pd.read_csv("data/df1_part1.csv")
-    df2 = pd.read_csv("data/df1_part2.csv")
+    df1 = pd.read_csv("data/df1_parte1.csv")
+    df2 = pd.read_csv("data/df1_parte2.csv")
     df = pd.concat([df1, df2], ignore_index=True)
     return df
 
-# App Interface
-st.title("Paper Finder")
-st.markdown("""
-Welcome to the Paper Finder App!  
-This app allows you to search for research papers by entering a query.  
-It uses precomputed Sentence-BERT embeddings and a FAISS index to quickly find the most relevant papers.  
-
-**How it works:**  
-- Your query is converted into an embedding using a Sentence-BERT model.  
-- The FAISS index is then used to retrieve the closest papers based on the L2 distance.  
-- Additionally, cosine similarity is calculated to provide another similarity metric.
-
-Enjoy exploring the research papers!
-""")
-
 # User input for query and number of results to display
-query_text = st.text_input("Enter your query:")
+query_text = st.text_input("Query:")
 k = st.number_input("Number of results", min_value=1, max_value=50, value=10)
 
 if st.button("Search"):
@@ -113,4 +137,5 @@ if st.button("Search"):
                 result_df['cosine_sim'] = cosine_sims
                 result_df = result_df[['full_title', 'abstract', 'doi', 'cosine_sim', 'L2_score']]
                 
-                st.write(result_df)
+                # Display the DataFrame using the full container width
+                st.dataframe(result_df, use_container_width=True)
