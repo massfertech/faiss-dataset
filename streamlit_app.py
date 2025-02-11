@@ -7,119 +7,91 @@ import re
 from sentence_transformers import SentenceTransformer
 from nltk.corpus import stopwords
 
-# Configuración inicial de la página
-st.set_page_config(page_title="Buscador de Papers Científicos", page_icon="📚")
+# Configuración de la página
+st.set_page_config(page_title="Buscador Científico", page_icon="🔬")
 st.title("Búsqueda Semántica en Artículos Científicos")
-st.write("""
-Busca artículos relevantes usando lenguaje natural. 
-El sistema entenderá el contexto de tu búsqueda y encontrará los papers más relevantes.
-""")
+st.write("Escribe tu pregunta o tema de interés para encontrar los papers más relevantes:")
 
-# Descargar stopwords de NLTK
+# Cargar datos preprocesados
 @st.cache_data
-def descargar_stopwords():
-    nltk.download('stopwords')
-descargar_stopwords()
-stop_words = set(stopwords.words('english'))
+def cargar_metadata():
+    return pd.read_csv("data/df1_part1.csv")
 
-# Función para limpiar texto
-def limpiar_texto(texto):
-    texto = texto.lower()
-    texto = re.sub(r'[^\w\s]', '', texto)
-    texto = ' '.join([palabra for palabra in texto.split() if palabra not in stop_words])
-    return texto
+@st.cache_data
+def cargar_embeddings():
+    return np.load("data/embeddings.npy")
 
-# Cargar modelo de Sentence Transformers
+@st.cache_resource
+def cargar_indice_faiss():
+    return faiss.read_index("data/faiss_index.bin")
+
 @st.cache_resource
 def cargar_modelo():
     return SentenceTransformer('all-mpnet-base-v2')
 
-modelo = cargar_modelo()
-
-# Cargar y preprocesar datos
-@st.cache_data
-def cargar_datos():
-    datos = pd.read_csv("data/articulos_cientificos.csv")
-    datos['texto_completo'] = datos['abstract'] + " " + datos['full_text']
-    datos['texto_limpio'] = datos['texto_completo'].apply(limpiar_texto)
-    return datos
-
-datos = cargar_datos()
-
-# Generar embeddings y crear índice FAISS
-@st.cache_resource
-def preparar_sistema_busqueda(datos):
-    textos = datos['texto_limpio'].tolist()
-    embeddings = modelo.encode(textos)
-    dimension = embeddings.shape[1]
-    indice = faiss.IndexFlatL2(dimension)
-    indice.add(embeddings)
-    return embeddings, indice
-
-embeddings, indice_faiss = preparar_sistema_busqueda(datos)
+# Cargar todos los componentes
+with st.spinner('Cargando sistema de búsqueda...'):
+    df = cargar_metadata()
+    embeddings = cargar_embeddings()
+    indice_faiss = cargar_indice_faiss()
+    modelo = cargar_modelo()
 
 # Widget de búsqueda
-consulta = st.text_input("Escribe tu consulta científica:", 
-                       placeholder="Ej: Avances recientes en terapia génica para cáncer...")
+consulta = st.text_input("**Escribe tu consulta científica:**", 
+                       placeholder="Ej: Efectos del COVID-19 en el sistema cardiovascular...")
 
 if consulta:
-    with st.spinner('Buscando en más de 10,000 artículos...'):
+    with st.spinner(f'Buscando en {len(df)} artículos...'):
         # Generar embedding para la consulta
-        embedding_consulta = modelo.encode([consulta])
+        query_embedding = modelo.encode([consulta])
         
-        # Búsqueda en el índice FAISS
+        # Búsqueda FAISS
         k = 10
-        distancias, indices = indice_faiss.search(embedding_consulta, k)
+        distancias, indices = indice_faiss.search(query_embedding, k)
         
         # Calcular similitud coseno
-        embedding_plano = embedding_consulta.flatten()
+        query_flat = query_embedding.flatten()
         similitudes = []
         for idx in indices[0]:
-            embedding_articulo = embeddings[idx]
-            producto_punto = np.dot(embedding_plano, embedding_articulo)
-            norma = np.linalg.norm(embedding_plano) * np.linalg.norm(embedding_articulo)
-            similitudes.append(producto_punto / norma)
+            doc_embedding = embeddings[idx]
+            dot_product = np.dot(query_flat, doc_embedding)
+            norm_product = np.linalg.norm(query_flat) * np.linalg.norm(doc_embedding)
+            similitudes.append(dot_product / norm_product)
         
-        # Crear DataFrame con resultados
-        resultados = datos.iloc[indices[0]][['titulo', 'abstract', 'doi', 'año_publicacion']]
-        resultados['Similitud'] = similitudes
-        resultados['Distancia'] = distancias[0]
-        
-        # Formatear resultados
-        resultados = resultados.sort_values('Similitud', ascending=False)
-        resultados['Similitud'] = resultados['Similitud'].apply(lambda x: f"{x:.1%}")
-        resultados['Distancia'] = resultados['Distancia'].apply(lambda x: f"{x:.2f}")
+        # Crear DataFrame de resultados
+        resultados = df.iloc[indices[0]].copy()
+        resultados['L2_score'] = distancias[0]
+        resultados['cosine_sim'] = similitudes
+        resultados = resultados[['full_title', 'abstract', 'doi', 'cosine_sim', 'L2_score']]
 
     # Mostrar resultados
-    st.subheader(f"Top {k} resultados para: '{consulta}'")
+    st.subheader(f"📚 Top {k} resultados para: '{consulta}'")
     
-    for _, fila in resultados.iterrows():
-        with st.expander(f"📄 {fila['titulo']} ({fila['año_publicacion']})"):
-            st.markdown(f"**DOI:** `{fila['doi']}`")
-            st.markdown(f"**Similitud:** {fila['Similitud']} | **Distancia:** {fila['Distancia']}")
-            st.markdown("**Resumen:**")
-            st.write(fila['abstract'])
+    for idx, fila in resultados.iterrows():
+        with st.expander(f"{fila['full_title']}"):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Similitud Coseno", f"{fila['cosine_sim']:.1%}")
+            with col2:
+                st.metric("Distancia L2", f"{fila['L2_score']:.2f}")
             
-    st.success(f"¡Búsqueda completada! Encontrados {len(resultados)} resultados relevantes.")
-else:
-    st.info("💡 Escribe una consulta en el campo superior para comenzar tu búsqueda.")
+            st.write("**DOI:**", fila['doi'])
+            st.write("**Abstract:**", fila['abstract'])
+            
+    st.success(f"Búsqueda completada! Resultados ordenados por relevancia.")
 
-# Sección adicional con información del dataset
+else:
+    st.info("💡 Ejemplo de consulta: 'Avances recientes en terapia génica para diabetes tipo 2'")
+
+# Sidebar con información
 with st.sidebar:
-    st.header("⚙️ Acerca del sistema")
-    st.markdown("""
-    **Tecnologías utilizadas:**
-    - Modelo de embeddings: `all-mpnet-base-v2`
-    - Búsqueda semántica: FAISS
-    - Procesamiento de texto: NLTK y RegEx
+    st.header("⚙️ Información del Sistema")
+    st.write(f"**Base de datos:** {len(df)} artículos científicos")
+    st.write("**Modelo de embeddings:** all-mpnet-base-v2")
+    st.write("**Métricas de búsqueda:**")
+    st.write("- Similitud coseno (0-1, mayor es mejor)")
+    st.write("- Distancia L2 (menor es mejor)")
     
-    **Características del dataset:**
-    - Artículos científicos de PubMed/PMC
-    - Período: 2010-2023
-    - Campos incluidos: título, resumen, texto completo, DOI
-    """)
-    
-    if st.checkbox("Mostrar metadatos del dataset"):
-        st.write(f"📊 Total de artículos: {len(datos):,}")
-        st.write(f"📅 Rango temporal: {datos['año_publicacion'].min()}-{datos['año_publicacion'].max()}")
-        st.write("🔠 Campos disponibles:", ", ".join(datos.columns))
+    if st.checkbox("Mostrar metadatos técnicos"):
+        st.write("**Dimensiones embeddings:**", embeddings.shape[1])
+        st.write("**Tipo de índice FAISS:**", indice_faiss.__class__.__name__)
