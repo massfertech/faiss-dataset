@@ -30,7 +30,7 @@ def load_model():
 @st.cache_resource
 def load_faiss_index():
     # Cargamos el índice FAISS previamente guardado
-    index = faiss.read_index("/data/fais_index.bin")
+    index = faiss.read_index("data/fais_index.bin")
     return index
 
 @st.cache_data
@@ -42,7 +42,7 @@ def load_embeddings():
 @st.cache_data
 def load_dataframe():
     # Cargamos el DataFrame con la información de los papers
-    df = pd.read_csv("/data/df1_part1.csv")
+    df = pd.read_csv("data/df1_part1.csv")
     return df
 
 # Interfaz de la app
