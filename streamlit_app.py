@@ -7,13 +7,13 @@ import nltk
 import re
 from nltk.corpus import stopwords
 
-# Descargar stopwords (solo la primera vez)
+# Download stopwords (only once)
 nltk.download('stopwords')
 
 def clean_text(text):
     """
-    Función de limpieza: convierte a minúsculas, elimina caracteres especiales
-    y quita stopwords.
+    Clean the text: convert to lowercase, remove special characters,
+    and remove English stopwords.
     """
     text = text.lower()
     text = re.sub(r'[^\w\s]', '', text)
@@ -21,67 +21,80 @@ def clean_text(text):
     text = ' '.join([word for word in text.split() if word not in stop_words])
     return text
 
-# Usamos st.cache_resource para objetos pesados y st.cache_data para datos
+# Use st.cache_resource for heavy objects and st.cache_data for data
 @st.cache_resource
 def load_model():
-    # Cargamos el modelo Sentence-BERT
+    # Load the Sentence-BERT model
     model = SentenceTransformer('all-mpnet-base-v2')
     return model
 
 @st.cache_resource
 def load_faiss_index():
-    # Cargamos el índice FAISS preconstruido
+    # Load the pre-built FAISS index
     index = faiss.read_index("data/faiss_index.bin")
     return index
 
 @st.cache_data
 def load_embeddings():
-    # Cargamos los embeddings precomputados
+    # Load precomputed embeddings
     embeddings = np.load("data/embeddings.npy")
     return embeddings
 
 @st.cache_data
 def load_dataframe():
-    # Cargamos el DataFrame con la metadata de los papers
-    df = pd.read_csv("data/df1_part1.csv")
+    # Load the metadata for the papers by combining two CSV files.
+    # This allows you to bypass GitHub's file size limitations by splitting your dataset.
+    df1 = pd.read_csv("data/df1_parte1.csv")
+    df2 = pd.read_csv("data/df1_parte2.csv")
+    df = pd.concat([df1, df2], ignore_index=True)
     return df
 
-# Interfaz de la app
-st.title("Buscador de Papers")
+# App Interface
+st.title("Paper Finder")
+st.markdown("""
+Welcome to the Paper Finder App!  
+This app allows you to search for research papers by entering a query.  
+It uses precomputed Sentence-BERT embeddings and a FAISS index to quickly find the most relevant papers.  
 
-# Campo para la consulta
-query_text = st.text_input("Ingresa tu consulta:")
+**How it works:**  
+- Your query is converted into an embedding using a Sentence-BERT model.  
+- The FAISS index is then used to retrieve the closest papers based on the L2 distance.  
+- Additionally, cosine similarity is calculated to provide another similarity metric.
 
-# Número de resultados a mostrar
-k = st.number_input("Número de resultados", min_value=1, max_value=50, value=10)
+Enjoy exploring the research papers!
+""")
 
-if st.button("Buscar"):
+# User input for query and number of results to display
+query_text = st.text_input("Enter your query:")
+k = st.number_input("Number of results", min_value=1, max_value=50, value=10)
+
+if st.button("Search"):
     if query_text.strip() == "":
-        st.error("Por favor, ingresa una consulta válida.")
+        st.error("Please enter a valid query.")
     else:
-        with st.spinner("Buscando papers..."):
-            # Carga de datos y modelos (se hace solo una vez gracias al caching)
+        with st.spinner("Searching for papers..."):
+            # Load models and data (cached, so loaded only once)
             model = load_model()
             index = load_faiss_index()
             embeddings = load_embeddings()
             df = load_dataframe()
             
-            # Convertir la consulta en un embedding
+            # Convert the query into an embedding
             query_embedding = model.encode([query_text])
             
-            # Aseguramos que k no supere la cantidad de filas en el DataFrame
+            # Ensure that k does not exceed the number of papers in the dataset
             k = min(k, len(df))
             
-            # Buscar en el índice FAISS los k vecinos más cercanos (usando L2)
+            # Search the FAISS index for the k nearest neighbors using L2 distance
             distances, indices = index.search(query_embedding, k)
             query_embedding_flat = query_embedding.flatten()
             
-            # Filtrar índices válidos (evitar índices negativos o fuera del rango)
+            # Filter valid indices (avoid negative or out-of-bound indices)
             valid_indices = [idx for idx in indices[0] if idx >= 0 and idx < len(df)]
             if not valid_indices:
-                st.error("No se encontraron resultados válidos.")
+                st.error("No valid results found.")
             else:
-                # Calcular la similitud coseno para cada resultado válido
+                # Calculate cosine similarity for each valid result
                 cosine_sims = []
                 for idx in valid_indices:
                     doc_embedding = embeddings[idx]
@@ -89,16 +102,15 @@ if st.button("Buscar"):
                     norm_product = np.linalg.norm(query_embedding_flat) * np.linalg.norm(doc_embedding)
                     cosine_sims.append(dot_product / norm_product)
             
-                # Extraer las filas correspondientes del DataFrame
+                # Extract the corresponding rows from the DataFrame
                 result_df = df.iloc[valid_indices][['full_title', 'abstract', 'doi']].copy()
                 
-                # Filtrar también las distancias correspondientes a los índices válidos
+                # Filter the distances corresponding to the valid indices
                 valid_distances = [dist for i, dist in zip(indices[0], distances[0]) if i in valid_indices]
                 
-                # Agregar las métricas al DataFrame
+                # Add similarity metrics to the DataFrame
                 result_df['L2_score'] = valid_distances
                 result_df['cosine_sim'] = cosine_sims
                 result_df = result_df[['full_title', 'abstract', 'doi', 'cosine_sim', 'L2_score']]
                 
                 st.write(result_df)
-
