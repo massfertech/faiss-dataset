@@ -163,17 +163,9 @@ if st.button("Search"):
                     lambda x: f'<div style="max-height: 150px; overflow-y: auto;">{x}</div>'
                 )
                 
-                # Calculate dynamic table height: (number of rows + header row) * 35 + 3 pixels.
-                table_height = (len(result_df) + 1) * 35 + 3
-                
                 # Convert the DataFrame to HTML (with escape=False to allow HTML in the DOI and abstract columns)
                 html_table = result_df.to_html(escape=False, index=False, classes="custom-table")
                 
-                # Wrap the table in a div with dynamic height and auto scroll if needed
-                html_container = f"""
-                <div style="height: {table_height}px; overflow: auto; width: 100%;">
-                    {html_table}
-                </div>
-                """
-                
-                st.markdown(html_container, unsafe_allow_html=True)
+                # Instead of wrapping the table in a fixed height container,
+                # we display it directly so that it expands vertically to show all rows.
+                st.markdown(html_table, unsafe_allow_html=True)
