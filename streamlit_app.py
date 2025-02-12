@@ -83,13 +83,13 @@ def load_model():
 @st.cache_resource
 def load_faiss_index():
     # Load the pre-built FAISS index
-    index = faiss.read_index("data/faiss_index.bin")
+    index = faiss.read_index("data/faiss_index (1).bin")
     return index
 
 @st.cache_data
 def load_embeddings():
     # Load precomputed embeddings
-    embeddings = np.load("data/embeddings.npy")
+    embeddings = np.load("data/embeddings (1).npy")
     return embeddings
 
 @st.cache_data
