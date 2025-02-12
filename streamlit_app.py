@@ -169,3 +169,15 @@ if st.button("Search"):
                 # Instead of wrapping the table in a fixed height container,
                 # we display it directly so that it expands vertically to show all rows.
                 st.markdown(html_table, unsafe_allow_html=True)
+                
+                st.markdown("""
+                **Explanation of Metrics:**
+
+                - **Cosine Similarity:**  
+                  This measures the cosine of the angle between the vector representations of your query and each paper.  
+                  A value close to 1 indicates that the texts are very similar, while a value close to 0 indicates less similarity.
+
+                - **L2 Score (Euclidean Distance):**  
+                  This calculates the straight-line distance between the vector representations.  
+                  Lower values mean the texts are more similar, while higher values suggest they are more different.
+                """)
