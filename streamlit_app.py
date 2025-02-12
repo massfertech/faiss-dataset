@@ -28,19 +28,31 @@ st.markdown("""
     .main-title {
         font-size: 5em;
         text-align: center;
+        margin-bottom: 0.2em;
     }
     .main-description {
         font-size: 2em;
         text-align: center;
         margin-bottom: 1em;
     }
-    /* Ensure table rows adjust height to fit content and wrap text */
-    div[data-baseweb="table"] table tbody tr {
-        height: auto;
+    /* Table styling */
+    div[data-baseweb="table"] {
+        width: 100% !important;
     }
+    div[data-baseweb="table"] table {
+        width: 100% !important;
+        table-layout: auto;
+    }
+    /* Force full wrapping and avoid truncation */
     div[data-baseweb="table"] table thead tr th, 
     div[data-baseweb="table"] table tbody tr td {
-        white-space: normal;
+        white-space: normal !important;
+        word-wrap: break-word;
+    }
+    /* Increase minimum width for the first column (full_title) */
+    div[data-baseweb="table"] table tbody tr td:nth-child(1),
+    div[data-baseweb="table"] table thead tr th:nth-child(1) {
+        min-width: 300px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -81,7 +93,7 @@ def load_embeddings():
 
 @st.cache_data
 def load_dataframe():
-    # Load the metadata for the papers by combining two CSV files.
+    # Load the metadata for the papers by combining four CSV files.
     # This allows you to bypass GitHub's file size limitations by splitting your dataset.
     df1 = pd.read_csv("data/final_df_part_1.csv", encoding="utf-8")
     df2 = pd.read_csv("data/final_df_part_2.csv")
@@ -139,5 +151,8 @@ if st.button("Search"):
                 result_df['cosine_sim'] = cosine_sims
                 result_df = result_df[['full_title', 'abstract', 'doi', 'cosine_sim', 'L2_score']]
                 
-                # Display the DataFrame using the full container width
-                st.dataframe(result_df, use_container_width=True)
+                # Optional: Calculate dynamic table height if desired
+                table_height = (len(result_df) + 1) * 35 + 3
+                
+                # Display the DataFrame using the full container width and dynamic height
+                st.dataframe(result_df, use_container_width=True, height=table_height)
