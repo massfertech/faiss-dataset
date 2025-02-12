@@ -7,6 +7,9 @@ import nltk
 import re
 from nltk.corpus import stopwords
 
+# Set page layout to wide
+st.set_page_config(layout="wide")
+
 # Download stopwords (only once)
 nltk.download('stopwords')
 
@@ -35,24 +38,22 @@ st.markdown("""
         text-align: center;
         margin-bottom: 1em;
     }
-    /* Table styling */
-    div[data-baseweb="table"] {
-        width: 100% !important;
-    }
-    div[data-baseweb="table"] table {
+    /* Table styling: force full width and word-wrap */
+    .custom-table {
         width: 100% !important;
         table-layout: auto;
     }
-    /* Force full wrapping and avoid truncation */
-    div[data-baseweb="table"] table thead tr th, 
-    div[data-baseweb="table"] table tbody tr td {
+    .custom-table th, .custom-table td {
         white-space: normal !important;
         word-wrap: break-word;
     }
-    /* Increase minimum width for the first column (full_title) */
-    div[data-baseweb="table"] table tbody tr td:nth-child(1),
-    div[data-baseweb="table"] table thead tr th:nth-child(1) {
-        min-width: 300px;
+    /* Optional: adjust link color if needed */
+    .custom-table a {
+        color: #1f77b4;
+        text-decoration: none;
+    }
+    .custom-table a:hover {
+        text-decoration: underline;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -151,8 +152,20 @@ if st.button("Search"):
                 result_df['cosine_sim'] = cosine_sims
                 result_df = result_df[['full_title', 'abstract', 'doi', 'cosine_sim', 'L2_score']]
                 
-                # Optional: Calculate dynamic table height if desired
+                # Convert the 'doi' column into clickable links (assuming DOI is provided without the URL prefix)
+                result_df['doi'] = result_df['doi'].apply(lambda x: f'<a href="https://doi.org/{x}" target="_blank">{x}</a>')
+                
+                # Calculate dynamic table height: (number of rows + header row) * 35 + 3 pixels.
                 table_height = (len(result_df) + 1) * 35 + 3
                 
-                # Display the DataFrame using the full container width and dynamic height
-                st.dataframe(result_df, use_container_width=True, height=table_height)
+                # Convert the DataFrame to HTML (with escape=False to allow HTML in the DOI column)
+                html_table = result_df.to_html(escape=False, index=False, classes="custom-table")
+                
+                # Wrap the table in a div with dynamic height and auto scroll if needed
+                html_container = f"""
+                <div style="height: {table_height}px; overflow: auto; width: 100%;">
+                    {html_table}
+                </div>
+                """
+                
+                st.markdown(html_container, unsafe_allow_html=True)
