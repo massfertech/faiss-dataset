@@ -62,7 +62,7 @@ st.markdown("""
 st.markdown("<h1 class='main-title'>Paper Finder 🔍</h1>", unsafe_allow_html=True)
 st.markdown("<h2 class='main-description'>Discover the most relevant research papers based on your query</h2>", unsafe_allow_html=True)
 
-# "How it works" description (unchanged)
+# "How it works" description
 st.markdown("""
 **How it works?**  
 - Your query is converted into an embedding using a Sentence-BERT model.  
@@ -152,13 +152,21 @@ if st.button("Search"):
                 result_df['cosine_sim'] = cosine_sims
                 result_df = result_df[['full_title', 'abstract', 'doi', 'cosine_sim', 'L2_score']]
                 
-                # Convert the 'doi' column into clickable links (assuming DOI is provided without the URL prefix)
-                result_df['doi'] = result_df['doi'].apply(lambda x: f'<a href="https://doi.org/{x}" target="_blank">{x}</a>')
+                # Convert the 'doi' column into clickable links
+                result_df['doi'] = result_df['doi'].apply(
+                    lambda x: f'<a href="https://doi.org/{x}" target="_blank">{x}</a>'
+                )
+                
+                # Limit the text in the 'abstract' column with a scrollable div.
+                # Ajusta "150px" según la cantidad de texto que quieras mostrar por defecto.
+                result_df['abstract'] = result_df['abstract'].apply(
+                    lambda x: f'<div style="max-height: 150px; overflow-y: auto;">{x}</div>'
+                )
                 
                 # Calculate dynamic table height: (number of rows + header row) * 35 + 3 pixels.
                 table_height = (len(result_df) + 1) * 35 + 3
                 
-                # Convert the DataFrame to HTML (with escape=False to allow HTML in the DOI column)
+                # Convert the DataFrame to HTML (with escape=False to allow HTML in the DOI and abstract columns)
                 html_table = result_df.to_html(escape=False, index=False, classes="custom-table")
                 
                 # Wrap the table in a div with dynamic height and auto scroll if needed
