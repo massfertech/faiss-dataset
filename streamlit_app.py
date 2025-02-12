@@ -181,7 +181,7 @@ if st.button("Search"):
                   This calculates the straight-line distance between the vector representations.  
                   Lower values mean the texts are more similar, while higher values suggest they are more different.
 
-                - ** Which One to Use?**
+                - **Which One to Use?**
                   For evaluating how similar a text is to a query, cosine similarity is generally more relevant because it focuses on the semantic relationship—how the words and their meanings align—rather than the absolute size of the vector. 
                   Although both metrics can provide useful, complementary insights, cosine similarity tends to capture text similarity more effectively in most NLP applications.
                 """)
