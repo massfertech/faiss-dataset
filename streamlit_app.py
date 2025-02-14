@@ -77,7 +77,7 @@ st.markdown("**Enter your search below and enjoy exploring the research papers:*
 @st.cache_resource
 def load_model():
     # Load the Sentence-BERT model
-    model = SentenceTransformer('all-mpnet-base-v2')
+    model = SentenceTransformer('all-MiniLM-L6-v2')
     return model
 
 @st.cache_resource
