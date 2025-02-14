@@ -143,7 +143,7 @@ if st.button("Search"):
                     cosine_sims.append(dot_product / norm_product)
             
                 # Extract the corresponding rows from the DataFrame
-                result_df = df.iloc[valid_indices][['full_title', 'abstract', 'doi']].copy()
+                result_df = df.iloc[valid_indices][['full_title', 'abstract', 'doi', 'publication_year']].copy()
                 
                 # Filter the distances corresponding to the valid indices
                 valid_distances = [dist for i, dist in zip(indices[0], distances[0]) if i in valid_indices]
@@ -161,7 +161,7 @@ if st.button("Search"):
                 # Limit the text in the 'abstract' column with a scrollable div.
                 # Ajusta "150px" según la cantidad de texto que quieras mostrar por defecto.
                 result_df['abstract'] = result_df['abstract'].apply(
-                    lambda x: f'<div style="max-height: 150px; overflow-y: auto;">{x}</div>'
+                    lambda x: f'<div style="max-height: 170px; overflow-y: auto;">{x}</div>'
                 )
                 
                 # Convert the DataFrame to HTML (with escape=False to allow HTML in the DOI and abstract columns)
