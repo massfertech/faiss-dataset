@@ -118,6 +118,7 @@ if st.button("Search"):
             index = load_faiss_index()
             embeddings = load_embeddings()
             df = load_dataframe()
+            print(len(df))
             
             # Convert the query into an embedding
             query_embedding = model.encode([query_text])
