@@ -101,6 +101,7 @@ def load_dataframe():
     df3 = pd.read_csv("data/df2.csv")
     # df4 = pd.read_csv("data/final_df_part_4.csv")
     df = pd.concat([df1, df2, df3], ignore_index=True)
+    print(len(df))
     # df = pd.read_csv("data/df2.csv")
     return df
 
