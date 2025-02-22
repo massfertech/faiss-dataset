@@ -152,7 +152,7 @@ if st.button("Search"):
                 # Add similarity metrics to the DataFrame
                 result_df['L2_score'] = valid_distances
                 result_df['cosine_sim'] = cosine_sims
-                result_df = result_df[['full_title', 'abstract', 'doi', 'cosine_sim', 'L2_score']]
+                result_df = result_df[['full_title', 'abstract', 'publication_year', 'doi', 'cosine_sim', 'L2_score']]
                 
                 # Convert the 'doi' column into clickable links
                 result_df['doi'] = result_df['doi'].apply(
