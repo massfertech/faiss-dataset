@@ -6,6 +6,8 @@ from sentence_transformers import SentenceTransformer
 import nltk
 import re
 from nltk.corpus import stopwords
+import rarfile
+import io
 
 # Set page layout to wide
 st.set_page_config(layout="wide")
