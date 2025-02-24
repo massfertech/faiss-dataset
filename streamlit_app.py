@@ -18,9 +18,6 @@ st.set_page_config(layout="wide")
 # Download stopwords (only once)
 nltk.download('stopwords')
 
-# Configurar la ruta al binario unrar
-rarfile.UNRAR_TOOL = os.path.join(os.getcwd(), "requirements", "unrar")
-
 def clean_text(text):
     """
     Clean the text: convert to lowercase, remove special characters,
@@ -102,44 +99,17 @@ def load_embeddings():
 
 @st.cache_data
 def load_dataframe():
-    rar_files = [
-        "data/df_part_1.rar",
-        "data/df_part_2.rar",
-        "data/df_part_3.rar",
-        "data/df_part_4.rar"
-    ]
-    
-    df_list = []
-    
-    # Crear un directorio temporal para extraer los archivos
-    with tempfile.TemporaryDirectory() as temp_dir:
-        for rar_path in rar_files:
-            if os.path.exists(rar_path):
-                try:
-                    # Extraer el RAR al directorio temporal
-                    patoolib.extract_archive(rar_path, outdir=temp_dir)
-                except Exception as e:
-                    st.error(f"Error al extraer {rar_path}: {e}")
-                    continue
-        
-        # Recoger todos los archivos CSV extraídos
-        for root, _, files in os.walk(temp_dir):
-            for file in files:
-                if file.endswith('.csv'):
-                    csv_path = os.path.join(root, file)
-                    try:
-                        df = pd.read_csv(csv_path)
-                        df_list.append(df)
-                    except Exception as e:
-                        st.error(f"Error al leer {csv_path}: {e}")
-    
-    if df_list:
-        df_full = pd.concat(df_list, ignore_index=True)
-        print("Total papers:", len(df_full))
-        return df_full
-    else:
-        st.error("No se encontraron archivos CSV válidos.")
-        return pd.DataFrame()
+    # Load the metadata for the papers by combining four CSV files.
+    # This allows you to bypass GitHub's file size limitations by splitting your dataset.
+    df1 = pd.read_parquet("data/final_df_21_02_part_1.parquet.csv", encoding="utf-8")
+    df2 = pd.read_parquet("data/final_df_21_02_part_2.csv")
+    df3 = pd.read_parquet("data/final_df_21_02_part_3.csv")
+    df4 = pd.read_parquet("data/final_df_21_02_part_4.csv")
+    df5 = pd.read_parquet("data/final_df_21_02_part_5.csv")
+
+    df = pd.concat([df1, df2, df3, df4], ignore_index=True)
+    return df
+
 
 # User input for query and number of results to display
 query_text = st.text_input("Query:")
