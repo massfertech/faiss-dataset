@@ -10,6 +10,7 @@ import rarfile
 import io
 import patoolib
 import tempfile
+import os
 
 # Set page layout to wide
 st.set_page_config(layout="wide")
