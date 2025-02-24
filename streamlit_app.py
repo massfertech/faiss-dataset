@@ -19,7 +19,7 @@ st.set_page_config(layout="wide")
 nltk.download('stopwords')
 
 # Configurar la ruta al binario unrar
-rarfile.UNRAR_TOOL = os.path.join(os.getcwd(), "bin", "unrar")
+rarfile.UNRAR_TOOL = os.path.join(os.getcwd(), "requirements", "unrar")
 
 def clean_text(text):
     """
