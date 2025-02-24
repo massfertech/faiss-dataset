@@ -9,6 +9,7 @@ from nltk.corpus import stopwords
 import rarfile
 import io
 import patoolib
+import tempfile
 
 # Set page layout to wide
 st.set_page_config(layout="wide")
@@ -106,20 +107,22 @@ def load_dataframe():
     ]
     
     df_list = []
-    # Para cada archivo RAR, se crea un directorio temporal para extraer su contenido.
+    # Ruta al ejecutable de unrar (asegúrate de que tenga permisos de ejecución)
+    unrar_path = os.path.join("bin", "unrarw64.exe")
+    
     for rf in rar_files:
         with tempfile.TemporaryDirectory() as tmpdirname:
-            # Extrae el contenido del archivo RAR en el directorio temporal
-            patoolib.extract_archive(rf, outdir=tmpdirname)
+            # Extrae el contenido del archivo RAR en el directorio temporal, usando el ejecutable especificado
+            patoolib.extract_archive(rf, outdir=tmpdirname, program=unrar_path)
             # Se asume que hay un único archivo CSV en cada RAR.
             for file in os.listdir(tmpdirname):
                 if file.endswith('.csv'):
                     csv_path = os.path.join(tmpdirname, file)
                     df = pd.read_csv(csv_path)
                     df_list.append(df)
-                    # Se puede eliminar el archivo extraído si se desea:
+                    # Opcionalmente, elimina el archivo extraído
                     os.remove(csv_path)
-    # Se concatenan todos los DataFrames
+    # Concatenar todos los DataFrames
     df_full = pd.concat(df_list, ignore_index=True)
     print("Total papers:", len(df_full))
     return df_full
