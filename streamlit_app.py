@@ -108,25 +108,27 @@ def load_dataframe():
     ]
     
     df_list = []
-    # Ruta al ejecutable de unrar (asegúrate de que tenga permisos de ejecución)
-    unrar_path = os.path.join("bin", "7za")
+    
+    # Asegurar que rarfile puede usar unrar
+    rarfile.UNRAR_TOOL = "unrar"  # Asegúrate de que 'unrar' está en el PATH
     
     for rf in rar_files:
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            # Extrae el contenido del archivo RAR en el directorio temporal, usando el ejecutable especificado
-            patoolib.extract_archive(rf, outdir=tmpdirname, program=unrar_path)
-            # Se asume que hay un único archivo CSV en cada RAR.
-            for file in os.listdir(tmpdirname):
-                if file.endswith('.csv'):
-                    csv_path = os.path.join(tmpdirname, file)
-                    df = pd.read_csv(csv_path)
-                    df_list.append(df)
-                    # Opcionalmente, elimina el archivo extraído
-                    os.remove(csv_path)
-    # Concatenar todos los DataFrames
-    df_full = pd.concat(df_list, ignore_index=True)
-    print("Total papers:", len(df_full))
-    return df_full
+        if os.path.exists(rf):  # Verifica si el archivo RAR existe
+            with rarfile.RarFile(rf) as archive:
+                for file_name in archive.namelist():
+                    if file_name.endswith('.csv'):  # Solo extraer archivos CSV
+                        with archive.open(file_name) as f:
+                            df = pd.read_csv(io.BytesIO(f.read()))
+                            df_list.append(df)
+    
+    if df_list:
+        df_full = pd.concat(df_list, ignore_index=True)
+        print("Total papers:", len(df_full))
+        return df_full
+    else:
+        print("No CSV files found.")
+        return pd.DataFrame()  # Retorna un DataFrame vacío si no hay archivos
+
 
 # User input for query and number of results to display
 query_text = st.text_input("Query:")
