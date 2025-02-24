@@ -82,7 +82,8 @@ st.markdown("**Enter your search below and enjoy exploring the research papers:*
 @st.cache_resource
 def load_model():
     # Load the Sentence-BERT model
-    model = SentenceTransformer('all-MiniLM-L6-v2')
+    #model = SentenceTransformer('all-MiniLM-L6-v2')
+    model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2', trust_remote_code=True)
     return model
 
 @st.cache_resource
