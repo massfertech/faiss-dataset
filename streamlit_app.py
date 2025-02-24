@@ -109,7 +109,7 @@ def load_dataframe():
     
     df_list = []
     # Ruta al ejecutable de unrar (asegúrate de que tenga permisos de ejecución)
-    unrar_path = os.path.join("bin", "7za.exe")
+    unrar_path = os.path.join("bin", "7za")
     
     for rf in rar_files:
         with tempfile.TemporaryDirectory() as tmpdirname:
