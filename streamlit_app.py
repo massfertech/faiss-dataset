@@ -18,6 +18,9 @@ st.set_page_config(layout="wide")
 # Download stopwords (only once)
 nltk.download('stopwords')
 
+# Configurar la ruta al binario unrar
+rarfile.UNRAR_TOOL = os.path.join(os.getcwd(), "bin", "unrar")
+
 def clean_text(text):
     """
     Clean the text: convert to lowercase, remove special characters,
