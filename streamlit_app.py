@@ -97,7 +97,7 @@ def load_embeddings():
 
 @st.cache_data
 def load_dataframe():
-    # List of rar file paths
+    # Lista de archivos RAR con los CSV
     rar_files = [
         "data/df_part_1.rar",
         "data/df_part_2.rar",
@@ -106,18 +106,20 @@ def load_dataframe():
     ]
     
     df_list = []
-    for rf_path in rar_files:
-        # Open the rar file
-        with rarfile.RarFile(rf_path) as rf:
-            # Assume each RAR contains one CSV file; get its name
-            csv_name = rf.namelist()[0]
-            # Open the CSV file within the rar archive
-            with rf.open(csv_name) as f:
-                # Read the CSV into a DataFrame
-                df = pd.read_csv(io.BytesIO(f.read()))
-                df_list.append(df)
-    
-    # Concatenate all DataFrames
+    # Para cada archivo RAR, se crea un directorio temporal para extraer su contenido.
+    for rf in rar_files:
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            # Extrae el contenido del archivo RAR en el directorio temporal
+            patoolib.extract_archive(rf, outdir=tmpdirname)
+            # Se asume que hay un único archivo CSV en cada RAR.
+            for file in os.listdir(tmpdirname):
+                if file.endswith('.csv'):
+                    csv_path = os.path.join(tmpdirname, file)
+                    df = pd.read_csv(csv_path)
+                    df_list.append(df)
+                    # Se puede eliminar el archivo extraído si se desea:
+                    os.remove(csv_path)
+    # Se concatenan todos los DataFrames
     df_full = pd.concat(df_list, ignore_index=True)
     print("Total papers:", len(df_full))
     return df_full
