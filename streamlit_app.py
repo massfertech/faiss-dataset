@@ -99,7 +99,6 @@ def load_embeddings():
 
 @st.cache_data
 def load_dataframe():
-    # Lista de archivos RAR con los CSV
     rar_files = [
         "data/df_part_1.rar",
         "data/df_part_2.rar",
@@ -109,26 +108,35 @@ def load_dataframe():
     
     df_list = []
     
-    # Asegurar que rarfile puede usar unrar
-    rarfile.UNRAR_TOOL = "unrar"  # Asegúrate de que 'unrar' está en el PATH
-    
-    for rf in rar_files:
-        if os.path.exists(rf):  # Verifica si el archivo RAR existe
-            with rarfile.RarFile(rf) as archive:
-                for file_name in archive.namelist():
-                    if file_name.endswith('.csv'):  # Solo extraer archivos CSV
-                        with archive.open(file_name) as f:
-                            df = pd.read_csv(io.BytesIO(f.read()))
-                            df_list.append(df)
+    # Crear un directorio temporal para extraer los archivos
+    with tempfile.TemporaryDirectory() as temp_dir:
+        for rar_path in rar_files:
+            if os.path.exists(rar_path):
+                try:
+                    # Extraer el RAR al directorio temporal
+                    patoolib.extract_archive(rar_path, outdir=temp_dir)
+                except Exception as e:
+                    st.error(f"Error al extraer {rar_path}: {e}")
+                    continue
+        
+        # Recoger todos los archivos CSV extraídos
+        for root, _, files in os.walk(temp_dir):
+            for file in files:
+                if file.endswith('.csv'):
+                    csv_path = os.path.join(root, file)
+                    try:
+                        df = pd.read_csv(csv_path)
+                        df_list.append(df)
+                    except Exception as e:
+                        st.error(f"Error al leer {csv_path}: {e}")
     
     if df_list:
         df_full = pd.concat(df_list, ignore_index=True)
         print("Total papers:", len(df_full))
         return df_full
     else:
-        print("No CSV files found.")
-        return pd.DataFrame()  # Retorna un DataFrame vacío si no hay archivos
-
+        st.error("No se encontraron archivos CSV válidos.")
+        return pd.DataFrame()
 
 # User input for query and number of results to display
 query_text = st.text_input("Query:")
