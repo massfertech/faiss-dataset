@@ -101,7 +101,7 @@ def load_embeddings():
 def load_dataframe():
     # Load the metadata for the papers by combining four CSV files.
     # This allows you to bypass GitHub's file size limitations by splitting your dataset.
-    df1 = pd.read_parquet("data/final_df_21_02_part_1.parquet", encoding="utf-8")
+    df1 = pd.read_parquet("data/final_df_21_02_part_1.parquet")
     df2 = pd.read_parquet("data/final_df_21_02_part_2.parquet")
     df3 = pd.read_parquet("data/final_df_21_02_part_3.parquet")
     df4 = pd.read_parquet("data/final_df_21_02_part_4.parquet")
