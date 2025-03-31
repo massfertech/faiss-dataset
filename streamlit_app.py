@@ -87,7 +87,7 @@ if st.button("Search"):
             index = load_faiss_index()
             embeddings = load_embeddings()
             df = load_dataframe()
-            print("El largo del df es: "+str(len(df)))
+            st.write(f"El largo del df es: {len(df)}")
 
             query_embedding = model.encode([query_text])
             k = min(k, len(df))
