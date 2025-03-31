@@ -62,7 +62,7 @@ k = st.number_input("Number of results", min_value=1, max_value=50, value=10)
 # Cache-heavy resources
 @st.cache_resource
 def load_model():
-    return  SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2", trust_remote_code=True)
+    return  SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
 
 @st.cache_resource
 def load_faiss_index():
