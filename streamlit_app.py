@@ -10,6 +10,8 @@ from nltk.corpus import stopwords
 # Set Streamlit page config
 st.set_page_config(layout="wide")
 
+creds = json.loads(st.secrets["google"]["credentials"])
+
 # Ensure stopwords are downloaded once
 @st.cache_resource
 def download_stopwords():
