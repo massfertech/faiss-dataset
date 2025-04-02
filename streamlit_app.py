@@ -8,7 +8,8 @@ from sentence_transformers import SentenceTransformer
 import re
 import nltk
 from nltk.corpus import stopwords
-from io import BytesIO
+from io import BytesIO, StringIO
+import asyncio
 
 # Set Streamlit page config
 st.set_page_config(layout="wide")
