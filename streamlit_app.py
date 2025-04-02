@@ -1,16 +1,21 @@
 import streamlit as st
 import numpy as np
+import json
+from google.cloud import storage
 import pandas as pd
 import faiss
 from sentence_transformers import SentenceTransformer
 import re
 import nltk
 from nltk.corpus import stopwords
+from io import BytesIO
 
 # Set Streamlit page config
 st.set_page_config(layout="wide")
 
-creds = json.loads(st.secrets["google"]["credentials"])
+# Load secrets from Streamlit
+gcs_credentials = json.loads(st.secrets["google"]["credentials"])
+bucket_name = st.secrets["google"]["bucket_name"]
 
 # Ensure stopwords are downloaded once
 @st.cache_resource
@@ -78,6 +83,19 @@ def load_embeddings():
 def load_dataframe():
     files = [f"data/final_df_21_02_part_{i}.parquet" for i in range(1, 6)]
     return pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
+
+def load_df_from_gcs(blob_name):
+    """Reads a CSV file from Google Cloud Storage and returns a DataFrame."""
+    client = storage.Client.from_service_account_info(gcs_credentials)
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+
+    content = blob.download_as_bytes()
+    return pd.read_parquet(BytesIO(content))
+
+# Example usage
+df = load_df_from_gcs("data/df0.parquet")
+st.write("DataFrame Loaded from GCS:", df.head())
 
 # Search functionality
 if st.button("Search"):
