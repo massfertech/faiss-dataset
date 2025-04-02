@@ -95,7 +95,7 @@ def load_df_from_gcs(blob_name):
     return pd.read_parquet(BytesIO(content))
 
 # Example usage
-df = load_df_from_gcs("data/df0.parquet")
+df = load_df_from_gcs("df0.parquet")
 st.write("DataFrame Loaded from GCS:", df.head())
 
 # Search functionality
