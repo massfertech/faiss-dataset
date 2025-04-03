@@ -137,6 +137,8 @@ if st.button("Search"):
                 result_df["doi"] = result_df["doi"].apply(lambda x: f'<a href="https://doi.org/{x}" target="_blank">{x}</a>')
                 result_df["abstract"] = result_df["abstract"].apply(lambda x: f'<div style="max-height: 170px; overflow-y: auto;">{x}</div>')
 
+                result_df = result_df[:50]
+
                 st.markdown(result_df.to_html(escape=False, index=False, classes="custom-table"), unsafe_allow_html=True)
 
                 st.markdown(
