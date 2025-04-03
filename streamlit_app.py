@@ -108,7 +108,7 @@ if st.button("Search"):
             # df = load_dataframe()
 
             df = load_df_from_gcs("df0.parquet")
-            st.write("DataFrame Loaded from GCS:", df.head()
+            st.write("DataFrame Loaded from GCS:", df.head())
             st.write(f"Cant de papers: {len(df)}")
 
             query_embedding = model.encode([query_text])
