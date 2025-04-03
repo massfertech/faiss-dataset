@@ -86,17 +86,15 @@ def load_dataframe():
     return pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
 
 def load_df_from_gcs(blob_name):
-    """Reads a CSV file from Google Cloud Storage and returns a DataFrame."""
+    """Lee un archivo Parquet desde GCS filtrando solo las columnas necesarias."""
     client = storage.Client.from_service_account_info(gcs_credentials)
     bucket = client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
-
+    
     content = blob.download_as_bytes()
-    return pd.read_parquet(BytesIO(content))
+    required_columns = ['full_title', 'abstract', 'publication_year', 'doi', 'CitedCount']
+    return pd.read_parquet(BytesIO(content), columns=required_columns)
 
-# Example usage
-# df = load_df_from_gcs("df0.parquet")
-# st.write("DataFrame Loaded from GCS:", df.head())
 
 # Search functionality
 if st.button("Search"):
@@ -107,7 +105,10 @@ if st.button("Search"):
             model = load_model()
             index = load_faiss_index()
             embeddings = load_embeddings()
-            df = load_dataframe()
+            # df = load_dataframe()
+
+            df = load_df_from_gcs("df0.parquet")
+            st.write("DataFrame Loaded from GCS:", df.head())
             st.write(f"Cant de papers: {len(df)}")
 
             query_embedding = model.encode([query_text])
